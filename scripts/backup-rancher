@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -ex
+
+REFDIR=${1:-minio-files-release-v3-try3}
+
+TDIR=$HOME/git/ericpromislow/rancher/rancher-dev-tools
+BDIR=$HOME/git/ericpromislow/rancher/backup-restore-operator
+
+cd $BDIR
+
+export KUBECONFIG=~/.kube/config
+export DOCKERHUB_USER=morspin
+
+#DIR=minio-files-1707174082
+
+EOT=<<'EOT'
+
+make build
+make package
+./scripts/deploy publish
+./scripts/deploy minio
+EOT
+./scripts/deploy backup-restore # => deploy_backup_restore
+./scripts/deploy create-backup
+
+# And then:
+./scripts/deploy list-minio-files
+./scripts/deploy retrieve-minio-files
+
+MOO=$(./scripts/deploy retrieve-minio-files | tee /dev/tty)
+DIR=$(echo "${MOO}" | grep 'Copied all files from Minio' | sed 's@Copied all files from Minio to ./@@')
+
+pushd $DIR
+tar xfz $(ls -1t *.gz | head -n 1)
+popd
+
+diff -r $REFDIR $DIR | grep "Only in $REFDIR" | sed "s@Only in ${REFDIR}/@@" | sort >| ~/trash/only-r1.txt
+diff -r $REFDIR $DIR | grep "Only in $DIR" | sed "s@Only in ${DIR}/@@" | sort >| ~/trash/only-r2.txt
+
+echo Checking the before-and-after diffs:
+ruby ~/bin/fuzzy-diff.rb ~/trash/only-r1.txt ~/trash/only-r2.txt

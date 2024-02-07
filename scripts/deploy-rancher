@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -ex
+
+# These are idempotent - no failure if already installed
+
+helm repo add cert-manager https://charts.jetstack.io
+ 
+helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+
+helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set installCRDs=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --timeout 10m --wait
+ 
+echo "Current cert-manager pods:"
+kubectl get pods --namespace cert-manager
+ 
+helm upgrade --install rancher rancher-latest/rancher   --namespace cattle-system --set hostname=localhost --wait --timeout=10m --create-namespace --timeout 10m --wait
+
+BOOTSTRAP_PASSWORD=$(kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{ "\n" }}' | tee /dev/tty)
+
+# New Rancher Password:
+# 0Vh9gD1mRqo1vEGx
