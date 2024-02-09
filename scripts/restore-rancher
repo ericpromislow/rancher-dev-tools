@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -exu
+
+MINIO_FILES_DIR=$1
+BACKUP_FILE=$2
+
+BDIR=$HOME/git/ericpromislow/rancher/backup-restore-operator
+cd $BDIR
+
+kubectl get ns | grep -q minio || ./scripts/deploy minio
+
+POD_NAME=$(kubectl get pods --namespace minio -l "release=minio" -o jsonpath="{.items[0].metadata.name}" | tee /dev/tty)
+
+kubectl port-forward $POD_NAME 9000 --namespace minio &
+PF_PID=$!
+
+DOCKER_HOSTNAME="host.docker.internal"
+
+docker run --rm --net=host -v "${PWD}/${MINIO_FILES_DIR}":/data -e MC_HOST_miniolocal=https://inspectorgadget:gogadgetgo@${DOCKER_HOSTNAME}:9000 minio/mc cp --insecure /data/$BACKUP_FILE miniolocal/rancherbackups/
+
+kill -9 $PF_PID
+
+kubectl get ns | grep -q cattle-resources-system || ./scripts/deploy backup-restore
+
+./scripts/deploy create-restore "$BACKUP_FILE"
