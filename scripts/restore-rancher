@@ -1,26 +1,84 @@
 #!/usr/bin/env bash
 
-set -exu
+set -ex
+
+case $# in
+    2) ;;
+    *) echo "Usage: $(basename $0) MINIO_FILES_DIR BACKUP_FILE" 1>2 ; exit 1 ;;
+esac
 
 MINIO_FILES_DIR=$1
 BACKUP_FILE=$2
 
+set -u
+
 BDIR=$HOME/git/ericpromislow/rancher/backup-restore-operator
-cd $BDIR
 
 kubectl get ns | grep -q minio || ./scripts/deploy minio
 
 POD_NAME=$(kubectl get pods --namespace minio -l "release=minio" -o jsonpath="{.items[0].metadata.name}" | tee /dev/tty)
 
+PF_PID=""
+dropPort() {
+  test -n "$PF_PID" && kill -9 $PF_PID
+}
+
+
+trap dropPort 1 2 3 15
+
 kubectl port-forward $POD_NAME 9000 --namespace minio &
 PF_PID=$!
 
+# Set DOCKER_HOSTNAME=localhost when running rancher in a docker container, otherwise do this:x
 DOCKER_HOSTNAME="host.docker.internal"
 
-docker run --rm --net=host -v "${PWD}/${MINIO_FILES_DIR}":/data -e MC_HOST_miniolocal=https://inspectorgadget:gogadgetgo@${DOCKER_HOSTNAME}:9000 minio/mc cp --insecure /data/$BACKUP_FILE miniolocal/rancherbackups/
+DOCKER_HOSTNAME="host.docker.internal"
+
+docker run --rm --net=host -v "${BDIR}/${MINIO_FILES_DIR}":/data -e MC_HOST_miniolocal=https://inspectorgadget:gogadgetgo@${DOCKER_HOSTNAME}:9000 minio/mc cp --insecure /data/$BACKUP_FILE miniolocal/rancherbackups/
+
+echo "What's in rancherbackups..."
+
+docker run --rm --net=host -v "${BDIR}/${MINIO_FILES_DIR}":/data -e MC_HOST_miniolocal=https://inspectorgadget:gogadgetgo@${DOCKER_HOSTNAME}:9000 minio/mc ls --insecure miniolocal/rancherbackups/
+
+echo MINIO_FILES_DIR: $MINIO_FILES_DIR
+echo BACKUP_FILE: $BACKUP_FILE
 
 kill -9 $PF_PID
+PF_PID=""
 
 kubectl get ns | grep -q cattle-resources-system || ./scripts/deploy backup-restore
 
-./scripts/deploy create-restore "$BACKUP_FILE"
+BRO_POD_NAME=$(kubectl get pods --namespace cattle-resources-system -o jsonpath="{.items[0].metadata.name}" | tee /dev/tty)
+
+#sleep 120
+#./scripts/deploy create-restore "$BACKUP_FILE"
+
+echo "Run the following command in another window, and press return here when it's ready to continue" 
+echo kubectl logs pod/$BRO_POD_NAME -n cattle-resources-system --follow
+
+read y
+
+CHART_VERSION=103.0.0+up4.0.0
+
+CERT_MANAGER_VERSION=v1.14.2
+RANCHER_VERSION=2.8.2
+#kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CERT_MANAGER_VERSION/cert-manager.crds.yaml
+#helm repo add jetstack https://charts.jetstack.io
+#helm repo update
+#helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+
+helm repo add cert-manager https://charts.jetstack.io
+helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set installCRDs=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --timeout 10m --wait
+
+kubectl get pods --namespace cert-manager
+
+echo "Press return to continue..."
+read y
+
+# helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+# helm install rancher rancher-latest/rancher --namespace cattle-system --set hostname=localhost --set bootstrapPassword=admin --wait --timeout=10m --create-namespace
+
+#helm get values rancher -n cattle-system -o yaml
+
+echo "Run deploy create-restore now"
+echo ./scripts/deploy create-restore "$BACKUP_FILE"

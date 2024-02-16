@@ -2,12 +2,13 @@
 
 set -ex
 
+ODIR=$PWD
+
 REFDIR=${1:-minio-files-release-v3-try3}
 
 TDIR=$HOME/git/ericpromislow/rancher/rancher-dev-tools
 BDIR=$HOME/git/ericpromislow/rancher/backup-restore-operator
 
-cd $BDIR
 
 export KUBECONFIG=~/.kube/config
 export DOCKERHUB_USER=morspin
@@ -20,13 +21,18 @@ make build
 make package
 ./scripts/deploy publish
 ./scripts/deploy minio
-EOT
-./scripts/deploy backup-restore # => deploy_backup_restore
+./scripts/deploy backup-restore
 ./scripts/deploy create-backup
 
+echo "Press return when it's time to get the backup files."
+read y
+
+EOT
 # And then:
 ./scripts/deploy list-minio-files
-./scripts/deploy retrieve-minio-files
+
+cd $BDIR
+"$ODIR"/scripts/deploy retrieve-minio-files
 
 MOO=$(./scripts/deploy retrieve-minio-files | tee /dev/tty)
 DIR=$(echo "${MOO}" | grep 'Copied all files from Minio' | sed 's@Copied all files from Minio to ./@@')

@@ -13,9 +13,19 @@ helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-m
 echo "Current cert-manager pods:"
 kubectl get pods --namespace cert-manager
  
-helm upgrade --install rancher rancher-latest/rancher   --namespace cattle-system --set hostname=localhost --wait --timeout=10m --create-namespace --timeout 10m --wait
+helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname=localhost --wait --timeout=10m --create-namespace
 
 BOOTSTRAP_PASSWORD=$(kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{ "\n" }}' | tee /dev/tty)
 
 # New Rancher Password:
-# 0Vh9gD1mRqo1vEGx
+# 0Vh9gD1mRqo1vEGx - 2024-02-01 rc5? upstream
+# Snapshot: rancher-2024-02-01a
+
+# v0KqUaaTuIRgpEZI - 2024-02-09 rc5 upstream
+# Snapshot: rancher-2024-02-09a-rc5-upstream-v0KqUaaTuIRgpEZI
+
+# 6LoHkXgj9qTyjcVex - 2024-02-09 head fork
+# Snapshot: rancher-2024-02-09b-head-fork-6LoHkXgj9qTyjcVe
+ 
+# Create user Joe Gibley joeg/";'031wulBFA - std user
+# Choose custom color ff141b (bright red)
