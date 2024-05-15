@@ -8,24 +8,27 @@ helm repo add cert-manager https://charts.jetstack.io
  
 helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 
+helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
+
+helm repo update
+
 helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set installCRDs=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --timeout 10m --wait
- 
-echo "Current cert-manager pods:"
-kubectl get pods --namespace cert-manager
- 
-helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname=localhost --wait --timeout=10m --create-namespace
+
+kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
+
+VERSION=2.8
+helm upgrade --install rancher rancher-latest/rancher --version $VERSION --namespace cattle-system --set hostname=localhost --wait --timeout=10m --create-namespace
+
+# helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname=localhost --wait --timeout=10m --create-namespace --set rancherImageTag="v2.9-head" --devel
 
 BOOTSTRAP_PASSWORD=$(kubectl get secret --namespace cattle-system bootstrap-secret -o go-template='{{.data.bootstrapPassword|base64decode}}{{ "\n" }}' | tee /dev/tty)
 
 # New Rancher Password:
-# 0Vh9gD1mRqo1vEGx - 2024-02-01 rc5? upstream
-# Snapshot: rancher-2024-02-01a
+# oHvwIirH9dN3Su2i - 2024-04-15 version 2.8
+# 
 
-# v0KqUaaTuIRgpEZI - 2024-02-09 rc5 upstream
-# Snapshot: rancher-2024-02-09a-rc5-upstream-v0KqUaaTuIRgpEZI
+# build notes:
 
-# 6LoHkXgj9qTyjcVex - 2024-02-09 head fork
-# Snapshot: rancher-2024-02-09b-head-fork-6LoHkXgj9qTyjcVe
- 
-# Create user Joe Gibley joeg/";'031wulBFA - std user
-# Choose custom color ff141b (bright red)
+# Why does this take so long?:
+# go build -ldflags '-X main.GitCommit=757c069 -X main.Version=757c069-dirty -extldflags -static -s' -o bin/backup-restore-operator
+

@@ -67,8 +67,8 @@ RANCHER_VERSION=2.8.2
 #helm repo update
 #helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
 
-helm repo add cert-manager https://charts.jetstack.io
-helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set installCRDs=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --timeout 10m --wait
+#helm repo add cert-manager https://charts.jetstack.io
+#helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set installCRDs=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --timeout 10m --wait
 
 kubectl get pods --namespace cert-manager
 
@@ -81,4 +81,4 @@ read y
 #helm get values rancher -n cattle-system -o yaml
 
 echo "Run deploy create-restore now"
-echo ./scripts/deploy create-restore "$BACKUP_FILE"
+./scripts/deploy create-restore "$BACKUP_FILE"

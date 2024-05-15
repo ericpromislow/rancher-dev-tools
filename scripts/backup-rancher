@@ -4,7 +4,8 @@ set -ex
 
 ODIR=$PWD
 
-REFDIR=${1:-minio-files-release-v3-try3}
+REFDIR=${1:-minio-files-release-v4-dev-02}
+# Not minio-files-release-v3-try3 for v4
 
 TDIR=$HOME/git/ericpromislow/rancher/rancher-dev-tools
 BDIR=$HOME/git/ericpromislow/rancher/backup-restore-operator
@@ -26,8 +27,8 @@ make package
 
 echo "Press return when it's time to get the backup files."
 read y
-
 EOT
+
 # And then:
 ./scripts/deploy list-minio-files
 

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -exu
+
+./scripts/build-agent
+cmp bin/agent package/agent || cp bin/agent package/
+TARGET_REPO=morspin/rancher:v2.7 ./dev-scripts/build-local.sh
+docker build -f package/Dockerfile.agent -t morspin/rancher-agent:v2.7 ./package
+docker push morspin/rancher-agent:v2.7 && docker push morspin/rancher:v2.7
+
+# echo "Go run install-rancher"
+
+install-rancher $1
