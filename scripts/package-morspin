@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -exu
+
+export ARCH=arm64 
+export CHART_REPO=morspin
+export REPO=morspin
+export TAG=v04
+export TARGET_ARCH=arm64
+
+./scripts/build-agent
+cmp bin/agent package/agent || cp bin/agent package/
+TARGET_REPO=morspin/rancher:v04 ./dev-scripts/build-local.sh
+docker build -f package/Dockerfile.agent -t morspin/rancher-agent:v04 ./package
+docker push morspin/rancher-agent:v04 && docker push morspin/rancher:v04
+
+echo "Go run install-rancher"
