@@ -2,13 +2,13 @@
 
 set -ex
 
-ODIR=$PWD
+export ODIR=$PWD
 
 REFDIR=${1:-minio-files-release-v4-dev-02}
 # Not minio-files-release-v3-try3 for v4
 
 TDIR=$HOME/git/ericpromislow/rancher/rancher-dev-tools
-BDIR=$HOME/git/ericpromislow/rancher/backup-restore-operator
+BDIR=$HOME/git/ericpromislow/rancher/backup-data
 
 
 export KUBECONFIG=~/.kube/config
@@ -35,10 +35,10 @@ EOT
 cd $BDIR
 "$ODIR"/scripts/deploy retrieve-minio-files
 
-MOO=$(./scripts/deploy retrieve-minio-files | tee /dev/tty)
+MOO=$("$ODIR/scripts/deploy" retrieve-minio-files | tee /dev/tty)
 DIR=$(echo "${MOO}" | grep 'Copied all files from Minio' | sed 's@Copied all files from Minio to ./@@')
 
-pushd $DIR
+pushd "$BDIR/$DIR"
 tar xfz $(ls -1t *.gz | head -n 1)
 popd
 
