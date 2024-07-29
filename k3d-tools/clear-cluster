@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -exu
+
+DIR1=$HOME/git/ericpromislow/rancher/webhook/.github/workflows/scripts
+
+export CLUSTER_NAME="${1:-webhook}"
+export K3S_VERSION=v1.28.9-k3s1
+export RANCHER_IMAGE_TAG=v2.9-head
+export VERSION=2.9
+export ARCH=amd64
+export CHART_PATH=$HOME/trash/rancher.tgz
+
+k3d registry list --no-headers -o json | jq -r '.[].name' | xargs --no-run-if-empty k3d registry delete
+k3d cluster delete $CLUSTER_NAME
