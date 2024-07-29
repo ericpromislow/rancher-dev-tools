@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -eu
+
+case $# in
+  4) ;;
+  *) echo "Usage: $(basename $0) CLUSTERNAME PROJECT_NAME NEW_NAMESPACE_NAME DOWNSTREAM_CONFIG"
+     echo "Something like: $(basename $0) mytestCluster proj01 newNS $HOME/Downloads/myKubeConfig.yaml"
+     exit 1
+esac
+
+set -x
+
+CLUSTERNAME=$1
+PROJECT_NAME=$2
+NEW_NAMESPACE_NAME=$3
+DOWNSTREAM_CONFIG=$4
+
+CLUSTER_ID="$(kubectl get clusters.management.cattle.io -o json |
+  jq -r '.items[] |
+         select(.metadata.annotations["field.cattle.io/description"] == "'$CLUSTERNAME'") | .metadata.name ')"
+
+if [ -z "${CLUSTER_ID:-}" ]; then
+   echo "Can't find cluster-id for cluster '$CLUSTERNAME'"
+   exit 2
+fi
+
+
+PROJECT_ID=$(kubectl get projects -n $CLUSTER_ID -o json |
+    jq -r '.items[] | select(.spec.displayName == "'$PROJECT_NAME'") | .metadata.name')
+
+if [ -z "${PROJECT_ID:-}" ]; then
+   echo "Can't find project-id for project $PROJECT_NAME in cluster '$CLUSTERNAME' (ID '$CLUSTER_ID')"
+   exit 2
+fi
+
+echo "About to create namespace $NEW_NAMESPACE_NAME in cluster/project ${CLUSTER_ID}:${PROJECT_ID}"
+
+KUBECONFIG=$DOWNSTREAM_CONFIG kubectl create -f - <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: $NEW_NAMESPACE_NAME
+  annotations:
+    field.cattle.io/projectId: ${CLUSTER_ID}:${PROJECT_ID}
+EOF

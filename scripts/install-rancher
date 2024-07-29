@@ -7,9 +7,12 @@ flip() {
 
 kubectl get ns | grep -s cattle && flip 'rancher already installed?'
 
-pgrep -f 'ngrok http --inspect=false https://localhost:443' || flip 'ngrok not running'
-
 set -exu
+
+case "${1:-localhost}" in
+localhost) ;;
+*) pgrep -f 'ngrok http --inspect=false https://localhost:443' || flip 'ngrok not running' ;;
+esac
 
 NGROK=$1
 
@@ -17,28 +20,144 @@ helm repo list | grep -q cert-manager || helm repo add cert-manager https://char
 helm repo list | grep -q rancher-latest || helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
 
-helm repo update
+helm repo add jetstack https://charts.jetstack.iohelm repo update
 
-helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set installCRDs=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --wait --timeout=10m
- 
+helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --wait --timeout=10m
+
+# WARNING: `installCRDs` is deprecated, use `crds.enabled` instead.
+
 # kubectl get pods --namespace cert-manager
 kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
 
 # ngrok http --inspect=false https://localhost:443
 
+case $NGROK in
+    localhost) NGROK1=localhost ;;
+    *) NGROK1="${NGROK}".ngrok.app ;;
+esac
 
-NGROK1="${NGROK}".ngrok.app
-# NGROK1=localhost
+VERSION=2.9
+VERSIONTAG=v05-arm64
+VERSIONTAG=v2.9-head
+CHART_PATH=rancher-latest/rancher
+CHART_PATH=$HOME/trash/rancher.tgz
+CHART_PATH=/Users/ericp/git/ericpromislow/rancher/rancher/build/chart/rancher
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=$VERSIONTAG
+
+VERSION=2.7
+VERSIONTAG=v2.7.10-head
+CHART_PATH=rancher-latest/rancher
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=$VERSIONTAG
+TLS_MODE=""
+
+## Stuff for the agent-tls-mode problem
+# RANCHER_IMAGE=morspin/rancher
+# RANCHER_TAG=v08
+VERSION=2.8
+VERSIONTAG=v2.8-head
+CHART_PATH=/Users/ericp/workspace/rancher/rancher/build/chart/rancher
+CHART_PATH=/Users/ericp/workspace/rancher/rancher/build/chart/rancher-v2.8
+CHART_PATH=rancher-latest/rancher
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=$VERSIONTAG
+TLS_MODE="agentTLSMode=system-store"
+
+VERSION=2.7
+VERSIONTAG=v2.7.10-head
+CHART_PATH=rancher-latest/rancher
+CHART_PATH=/Users/ericp/workspace/rancher/rancher/build/chart/rancher-v2.7
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=$VERSIONTAG
+TLS_MODE=""
+
+VERSION=2.8.5
+RANCHER_TAG=v2.8.5
+CHART_PATH=rancher-alpha/rancher
+CHART_PATH=/Users/ericp/workspace/rancher/rancher/build/chart/rancher-v2.8
+CHART_PATH=rancher-latest/rancher
+
+# helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION" --set rancherImage="$RANCHER_IMAGE" --set rancherImageTag="$RANCHER_TAG"
+
+# exit
+
+
+
+
+helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION"
+
+
+exit
+
+VERSION=2.9
+VERSIONTAG=v2.9.0-alpha7
+CHART_PATH=rancher-latest/rancher
+CHART_PATH=$HOME/trash/rancher.tgz
+CHART_PATH=/Users/ericp/workspace/rancher/rancher/build/chart/rancher-v2.9
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=$VERSIONTAG
+TLS_MODE="agentTLSMode=system-store"
+
+# helm template rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION" --set rancherImage="$RANCHER_IMAGE" --set rancherImageTag="$RANCHER_TAG" --set agentTLSMode=system-store --debug
+
+if [ -n "${TLS_MODE:-}" ] ; then
+  helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION" --set rancherImage="$RANCHER_IMAGE" --set rancherImageTag="$RANCHER_TAG" --set "$TLS_MODE" --set privateCA
+else
+  helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION" --set rancherImage="$RANCHER_IMAGE" --set rancherImageTag="$RANCHER_TAG"  --set privateCA
+fi
+
+exit
+
+echo  \
+    --set 'extraEnv[0].name=STRICT_VERIFY' \
+    --set 'extraEnv[0].value="false"' \
+    --set 'extraEnv[1].name=CATTLE_RANCHER_STRICT_VERIFY' \
+    --set 'extraEnv[1].value="false"'
 
 VERSION=2.8
-VERSIONTAG=v03
-#helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --set rancherImage="morspin/rancher" --set rancherImageTag="$VERSIONTAG"
+
+helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname="$NGROK1" --version $VERSION --wait --timeout=10m --create-namespace --debug
+
+exit
+
+
+# More helm install things:
+
+helm upgrade --install rancher "$CHART_PATH" --devel \
+    --namespace cattle-system \
+    --create-namespace \
+    --set bootstrapPassword=admin \
+    --set replicas=1 \
+    --set hostname="$NGROK1" \
+    --set rancherImageTag=$RANCHER_TAG \
+    --set extraEnv[0].name=CATTLE_CHART_DEFAULT_BRANCH \
+    --set extraEnv[0].value=fleetci-dev-v2.7-20240704155138 \
+    --set extraEnv[1].name=CATTLE_CHART_DEFAULT_URL \
+    --set extraEnv[1].value=https://github.com/fleetrepoci/charts \
+    --set extraEnv[2].name=CATTLE_FLEET_VERSION \
+    --set extraEnv[2].value=999.9.9+up9.9.9
+
+VERSION=2.7
+VERSION=2.8
+CHART_PATH=rancher-latest/rancher
 
 # Core rancher.....
-#helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --set rancherImage="rancher/rancher" --set rancherImageTag="v2.9-head"
 
-# For later???
-helm upgrade --install rancher rancher-latest/rancher --version $VERSION --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace
+helm upgrade --install rancher rancher-latest/rancher --namespace cattle-system --set hostname="$NGROK1" --version $VERSION --wait --timeout=10m --create-namespace --debug
+
+exit
+
+# Stock rancher for this version
+
+NGROK1=localhost
+VERSION=2.8.2
+# helm upgrade --install rancher rancher-latest/rancher --version $VERSION --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace
+
+# Regular canned install with auditlog:
+
+#helm upgrade --install rancher rancher-latest/rancher --version $VERSION --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --set auditLog.level=1
+
 # --set rancherImage="morspin/rancher" --set rancherImageTag="v02"
 
 # --set auditLog.level=3
@@ -49,3 +168,6 @@ helm upgrade --install rancher rancher-latest/rancher --version $VERSION --names
 # helm upgrade --install rancher/rancher --namespace cattle-system --create-namespace --set hostname=155e1595f943.ngrok.app --set rancherImage="morspin/rancher" --set rancherImageTag="v01"
   
   
+# /////////////////////////////////////////////////////////////////////////////
+# To get audit-logging in:
+# helm upgrade rancher rancher-latest/rancher --versihelm upgrade rancher rancher-latest/rancher --verison 2.8 --namespace cattle-system --set auditLog.level=1 --reuse-vaon 2.8 --namespace cattle-system --set auditLog.level=1 --reuse-values

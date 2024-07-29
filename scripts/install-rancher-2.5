@@ -1,0 +1,38 @@
+#!/bin/bash
+
+flip() {
+    echo $1
+    exit 1
+}
+
+kubectl get ns | grep -s cattle && flip 'rancher already installed?'
+
+set -exu
+
+case "${1:-localhost}" in
+localhost) ;;
+*) pgrep -f 'ngrok http --inspect=false https://localhost:443' || flip 'ngrok not running' ;;
+esac
+
+NGROK=$1
+
+helm repo list | grep -q cert-manager || helm repo add cert-manager https://charts.jetstack.io
+helm repo list | grep -q rancher-latest || helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
+
+helm repo update
+
+# for k8s 1.20:
+helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.6.1 --set installCRDs=true
+
+kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
+
+case $NGROK in
+    localhost) NGROK1=localhost ;;
+    *) NGROK1="${NGROK}".ngrok.app ;;
+esac
+
+VERSION=2.5
+CHART_PATH=rancher-latest/rancher
+
+helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION"
