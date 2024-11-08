@@ -2,16 +2,16 @@
 
 set -exu
 
-export ARCH=arm64 
+export ARCH="${ARCH:-arm64}"
 export CHART_REPO=morspin
 export REPO=morspin
-export TAG=v04
-export TARGET_ARCH=arm64
+export TAG="${TAG:-v04}"
+export TARGET_ARCH="${TARGET_ARCH:-arm64}"
 
 ./scripts/build-agent
 cmp bin/agent package/agent || cp bin/agent package/
-TARGET_REPO=morspin/rancher:v04 ./dev-scripts/build-local.sh
-docker build -f package/Dockerfile.agent -t morspin/rancher-agent:v04 ./package
-docker push morspin/rancher-agent:v04 && docker push morspin/rancher:v04
+TARGET_REPO=morspin/rancher:$TAG ./dev-scripts/build-local.sh
+docker build -f package/Dockerfile.agent -t morspin/rancher-agent:$TAG ./package
+docker push morspin/rancher-agent:$TAG && docker push morspin/rancher:$TAG
 
 echo "Go run install-rancher"

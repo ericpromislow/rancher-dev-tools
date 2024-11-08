@@ -6,21 +6,21 @@ DIR1=$HOME/git/ericpromislow/rancher/webhook/.github/workflows/scripts
 
 export CLUSTER_NAME="${1:-webhook}"
 export K3S_VERSION=v1.28.9-k3s1
-export RANCHER_IMAGE_TAG=v2.9-head
+export RANCHER_IMAGE_TAG=v2.9.0
 export VERSION=2.9
 export ARCH=amd64
 export CHART_PATH=$HOME/trash/rancher.tgz
 
-# $DIR1/setup-cluster.sh
+$DIR1/setup-cluster.sh
 
 echo "Done setting up cluster"
 read y
 
-# k3d image import dist/rancher-webhook-image.tar -c webhook || true
+k3d image import dist/rancher-webhook-image.tar -c webhook || true
 echo "Done loading webhook image"
 read y
 
-# $DIR1/start-rancher.sh
+$DIR1/start-rancher.sh
 
 echo "Done starting rancher"
 read y

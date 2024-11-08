@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -exu
+
+export ARCH="${ARCH:-amd64}"
+export CHART_REPO=morspin
+export REPO=morspin
+export TAG="${TAG:-$(yq '.env.TAG | sub("-.*", "")' < .github/workflows/pull-request.yml)-${COMMIT}}"
+export TARGET_ARCH="${TARGET_ARCH:-$ARCH}"
+
+export TARGET_REPO=$REPO/rancher:$TAG
+
+./scripts/build-agent
+cmp bin/agent package/agent || cp bin/agent package/
+TARGET_REPO=$TARGET_REPO REPO=$REPO IMAGE_TAG=$TAG ./dev-scripts/build-local.sh
+docker build -f package/Dockerfile-agent-dev -t $REPO/rancher-agent:$TAG --build-arg RANCHER_TAG=$TAG --build-arg RANCHER_REPO=$REPO  ./package
+docker push $REPO/rancher-agent:$TAG && docker push $REPO/rancher:$TAG
+
+# echo "Go run install-rancher"
+
+echo install-rancher $1
