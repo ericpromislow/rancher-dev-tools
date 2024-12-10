@@ -30,19 +30,23 @@ helm repo list | grep -q cert-manager || helm repo add cert-manager https://char
 helm repo list | grep -q rancher-alpha || helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
 helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
 
-# Update your local Helm chart repository cache
 helm repo update
 
 # Install the cert-manager Helm chart
-helm upgrade --install cert-manager cert-manager/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --wait --timeout=10m
-
+# helm upgrade --install cert-manager cert-manager/cert-manager --namespace cert-manager --create-namespace --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --wait --timeout=10m
 #  --version v1.15.0
 
-# helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace
+# helm upgrade --install cert-manager cert-manager/cert-manager --namespace cert-manager \
+
+helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+  --create-namespace --set installCRDs=true
 
 kubectl get namespaces | grep cattle-system || kubectl create namespace cattle-system
-kubectl -n cattle-system create secret generic tls-ca \
-  --from-file=cacerts.pem=$HOME/lab/rancher/cacerts.pem
+
+# Don't do this for issue 46189
+# I'm not sure how to do a proper lets-encrypt-based upload yet.
+#kubectl -n cattle-system create secret generic tls-ca \
+#  --from-file=cacerts.pem=$HOME/lab/rancher/cacerts.pem
 
 helm upgrade --install rancher rancher-alpha/rancher --devel \
   --namespace cattle-system \
@@ -50,9 +54,13 @@ helm upgrade --install rancher rancher-alpha/rancher --devel \
   --set rancherImage=rancher/rancher \
   --set rancherImageTag=v2.9-3c4ccdc5bc9fde3510089153b5ad58fdbe604880-head \
   --version 2.9.0-alpha7 \
-  --set agentTLSMode=strict \
-  --set privateCA=true \
-  --set tls=external
+  --set agentTLSMode=system-store \
+  --set tls=external \
+  --set ingress.tls.source=letsEncrypt \
+  --set letsEncrypt.email=eric.promislow@gmail.com \
+  --set letsEncrypt.incress.class=traefik
+
+#  --set privateCA=true \
 
 exit
 

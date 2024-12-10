@@ -6,9 +6,18 @@
 set -eo pipefail
 set -x
 
-SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
-source "$SCRIPT_DIR/../scripts/export-config"
-source "$SCRIPT_DIR/../scripts/version"
+RANCHER_DIR=$1
+THIS_DIR=$(cd $(dirname $0); pwd)
+
+if [ -z "${RANCHER_DIR:-}" ]; then
+  echo "Need to run this from a rancher src directory."
+  exit 1
+fi
+
+
+SCRIPT_DIR="$RANCHER_DIR/scripts"
+source "$SCRIPT_DIR/export-config"
+source "$SCRIPT_DIR/version"
 
 TARGET_OS="${TARGET_OS:-linux}"
 GO_BINARY="${GO_BINARY:-$(which go)}"
@@ -33,7 +42,7 @@ fi
 
 set -u
 
-RKE_VERSION="$(grep -m1 'github.com/rancher/rke' "${SCRIPT_DIR}/../go.mod" | awk '{print $2}')"
+RKE_VERSION="$(grep -m1 'github.com/rancher/rke' "${RANCHER_DIR}/go.mod" | awk '{print $2}')"
 DEFAULT_VALUES="{\"rke-version\":\"${RKE_VERSION}\"}"
 
 RANCHER_BINARY="${SCRIPT_DIR}/../bin/rancher"
@@ -41,17 +50,17 @@ GOOS="${TARGET_OS}" GOARCH="${TARGET_ARCH}" CGO_ENABLED=0 "${GO_BINARY}" build -
     -ldflags "-X github.com/rancher/rancher/pkg/version.Version=dev -X github.com/rancher/rancher/pkg/version.GitCommit=dev -X github.com/rancher/rancher/pkg/settings.InjectDefaults=$DEFAULT_VALUES -extldflags -static -s" \
     -o "${RANCHER_BINARY}"
 
-DATA_JSON_FILE="${SCRIPT_DIR}/../bin/data.json"
+DATA_JSON_FILE="${RANCHER_DIR}/bin/data.json"
 if [ ! -f "${DATA_JSON_FILE}" ]; then
     curl -sLf https://releases.rancher.com/kontainer-driver-metadata/release-v2.9/data.json > "${DATA_JSON_FILE}"
 fi
 
-K3S_AIRGAP_IMAGES_TARBALL="${SCRIPT_DIR}/../bin/k3s-airgap-images.tar"
+K3S_AIRGAP_IMAGES_TARBALL="${RANCHER_DIR}/bin/k3s-airgap-images.tar"
 if [ ! -f "${K3S_AIRGAP_IMAGES_TARBALL}" ]; then
     touch "${K3S_AIRGAP_IMAGES_TARBALL}"
 fi
 
-PACKAGE_FOLDER="${SCRIPT_DIR}/../package/"
+PACKAGE_FOLDER="${RANCHER_DIR}/package/"
 cp "${RANCHER_BINARY}" "${PACKAGE_FOLDER}"
 cp "${DATA_JSON_FILE}" "${PACKAGE_FOLDER}"
 cp "${K3S_AIRGAP_IMAGES_TARBALL}" "${PACKAGE_FOLDER}"
@@ -63,7 +72,7 @@ if [[ "$TARGET_REPO" != *:* ]]; then
   echo "Updated target tag: $TARGET_REPO"
 fi
 
-DOCKERFILE="${SCRIPT_DIR}/Dockerfile"
+DOCKERFILE="${THIS_DIR}/Dockerfile"
 # Always use buildx to make sure the image & the binary architectures match
 docker buildx build -t "${TARGET_REPO}" -f "${DOCKERFILE}" \
   --build-arg CATTLE_RANCHER_WEBHOOK_VERSION="${CATTLE_RANCHER_WEBHOOK_VERSION}" \

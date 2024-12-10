@@ -2,11 +2,24 @@
 
 set -exu
 
+# Run this from a rancher source dir
+
+RANCHER_DIR="$(pwd)"
+
+if [ ! -f "$RANCHER_DIR/go.mod" ] ;then
+    echo "Need to run this from a rancher source directory."
+    exit 2
+fi
+
+VERSION=v2.9
+
+DEV_SCRIPTS=$HOME/git/ericpromislow/rancher/rancher-dev-tools/local-builds/dev-scripts
+
 ./scripts/build-agent
-cmp bin/agent package/agent || cp bin/agent package/
-TARGET_REPO=morspin/rancher:v2.7 ./dev-scripts/build-local.sh
-docker build -f package/Dockerfile.agent -t morspin/rancher-agent:v2.7 ./package
-docker push morspin/rancher-agent:v2.7 && docker push morspin/rancher:v2.7
+# cmp bin/agent package/agent || cp bin/agent package/
+# TARGET_REPO=morspin/rancher:$VERSION $DEV_SCRIPTS/build-local.sh $RANCHER_DIR
+docker build -f $DEV_SCRIPTS/Dockerfile.agent --build-arg RANCHER_REPO=morspin --build-arg RANCHER_TAG=$VERSION -t morspin/rancher-agent:$VERSION ./package
+docker push morspin/rancher-agent:$VERSION && docker push morspin/rancher:$VERSION
 
 # echo "Go run install-rancher"
 

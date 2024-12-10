@@ -24,7 +24,6 @@ case $NGROK in
 esac
 
 helm repo list | grep -q cert-manager || helm repo add cert-manager https://charts.jetstack.io
-helm repo list | grep -q rancher-alpha || helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
 helm repo list | grep -q rancher-latest || helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
 
@@ -39,41 +38,36 @@ helm upgrade --install cert-manager cert-manager/cert-manager \
 
 kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
 
-# 2.9.2-alpha2 digital ocean creds fail, so go back to 2.9.1z
-
-RANCHER_VERSION=2.9.2-alpha2
-RANCHER_IMAGE_TAG=v2.9.2-alpha2
-CHART_PATH=rancher-alpha/rancher
-
-# 2.9.2-alpha2 digital ocean creds fail, so go back to 2.9.1z
-
-RANCHER_VERSION=2.9.1
-RANCHER_IMAGE_TAG=v2.9.1
-CHART_PATH=rancher-latest/rancher
+REPO=morspin
 
 RANCHER_VERSION=2.9.2
 RANCHER_IMAGE_TAG=v2.9.2
 CHART_PATH=rancher-latest/rancher
 
-# 2.9.1 -- can't create a downstream cluster with flannel - the downstream node 
-# never starts up a connection....
-
-# First 2.10 release...
+RANCHER_VERSION=2.10.0-alpha2
+# RANCHER_IMAGE_TAG=v2.10.0-alpha2
+RANCHER_IMAGE_TAG=v2.10.0-dev.20
+CHART_PATH=rancher-alpha/rancher
 
 RANCHER_VERSION=2.10.0
-RANCHER_IMAGE_TAG=v2.10.0
+RANCHER_IMAGE_TAG=v2.10.0-dev.21
 CHART_PATH=rancher-latest/rancher
 
 RANCHER_VERSION=2.10.0-alpha2
-RANCHER_IMAGE_TAG=v2.10.0-alpha2
+# RANCHER_IMAGE_TAG=v2.10.0-alpha2
+RANCHER_IMAGE_TAG=v2.10.0-dev-arm64.23
 CHART_PATH=rancher-alpha/rancher
+
+#REPO=rancher
+#RANCHER_IMAGE_TAG=v2.9.1-rc2
 
 helm upgrade --install rancher "${CHART_PATH}" \
   --namespace cattle-system \
   --create-namespace \
-  --set rancherImage=rancher/rancher \
+  --set rancherImage="$REPO/rancher" \
   --set rancherImageTag="${RANCHER_IMAGE_TAG}" \
   --set agentTLSMode=system-store \
+  --set CATTLE_LOGLEVEL=debug \
   --version "${RANCHER_VERSION}" \
   --set tls=external \
   --set hostname="$NGROK1"

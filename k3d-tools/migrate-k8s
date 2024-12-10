@@ -1,0 +1,55 @@
+#!/bin/bash
+
+set -exu
+
+# See ~/git/ericpromislow/rancher/rancher-dev-tools/k3d-tools/
+
+kubectl apply -f badcrd.yaml
+kubectl apply -f badcrd-instance.yaml
+
+
+wait_for_k8s() {
+    sleep 90
+    while true; do
+        if kubectl get --raw /readyz &>/dev/null; then
+          break
+        fi
+        sleep 5
+    done
+    while true; do
+        if [[ $(kubectl get node -o jsonpath="{.items[0].status.conditions[?(@.type=='Ready')].status}") == "True" ]] ; then
+            break
+        fi
+        sleep 1
+    done
+    while true; do
+        zob=$(kubectl get crd globaljobs.jobs.aliyun.com -o json| jq '.status.conditions[] | select(.type == "NonStructuralSchema") | .status')
+        case $zob in
+            "True") break ;;
+        esac
+        echo "Got $zob"
+        sleep 1
+    done
+}
+
+x=<<EOT
+rdctl set --kubernetes.version=v1.21.14
+wait_for_k8s
+rdctl set --kubernetes.version=v1.22.17
+wait_for_k8s
+rdctl set --kubernetes.version=v1.23.17
+wait_for_k8s
+EOT
+
+rdctl set --kubernetes.version=v1.24.17
+wait_for_k8s
+rdctl set --kubernetes.version=v1.25.16
+wait_for_k8s
+rdctl set --kubernetes.version=v1.26.15
+wait_for_k8s
+rdctl set --kubernetes.version=v1.27.15
+wait_for_k8s
+rdctl set --kubernetes.version=v1.28.11
+wait_for_k8s
+rdctl set --kubernetes.version=v1.29.6
+wait_for_k8s

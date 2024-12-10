@@ -20,7 +20,7 @@ helm repo list | grep -q cert-manager || helm repo add cert-manager https://char
 helm repo list | grep -q rancher-latest || helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
 
-helm repo add jetstack https://charts.jetstack.iohelm repo update
+helm repo update
 
 helm upgrade --install cert-manager --namespace cert-manager cert-manager/cert-manager --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --create-namespace --wait --timeout=10m
 
@@ -74,16 +74,25 @@ TLS_MODE=""
 
 VERSION=2.8.5
 RANCHER_TAG=v2.8.5
-CHART_PATH=rancher-alpha/rancher
-CHART_PATH=/Users/ericp/workspace/rancher/rancher/build/chart/rancher-v2.8
 CHART_PATH=rancher-latest/rancher
 
-# helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION" --set rancherImage="$RANCHER_IMAGE" --set rancherImageTag="$RANCHER_TAG"
+VERSION=2.8.5
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=v2.8.5
+CHART_PATH=rancher-latest/rancher
 
-# exit
+VERSION=2.7
+VERSIONTAG=v2.7.9
+CHART_PATH=rancher-latest/rancher
+RANCHER_IMAGE=rancher/rancher
+RANCHER_TAG=$VERSIONTAG
 
+helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION" --set rancherImage="$RANCHER_IMAGE" --set rancherImageTag="$RANCHER_TAG"
 
+exit
 
+VERSION=2.7
+CHART_PATH=rancher-latest/rancher
 
 helm upgrade --install rancher "$CHART_PATH" --namespace cattle-system --set hostname="$NGROK1" --wait --timeout=10m --create-namespace --version "$VERSION"
 

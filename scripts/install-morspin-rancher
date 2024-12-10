@@ -36,15 +36,12 @@ case $NGROK in
     *) NGROK1="${NGROK}".ngrok.app ;;
 esac
 
-VERSION=2.9.0-alpha7
+VERSION=2.9.0
 CHART_PATH=rancher-latest/rancher
-CHART_PATH=$HOME/trash/rancher.tgz
-CHART_PATH=/Users/ericp/git/ericpromislow/rancher/rancher/build/chart/rancher
-CHART_PATH=rancher-alpha/rancher
 
 # Stuff for the agent-tls-mode problem
 RANCHER_IMAGE=morspin/rancher
-RANCHER_IMAGE_TAG=v09a
+RANCHER_IMAGE_TAG=v10b
 
 helm upgrade --install rancher "$CHART_PATH" --devel \
   --namespace cattle-system \
