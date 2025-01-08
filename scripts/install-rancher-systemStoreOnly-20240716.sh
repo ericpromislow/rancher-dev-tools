@@ -60,13 +60,13 @@ CHART_PATH=rancher-latest/rancher
 
 # First 2.10 release...
 
-RANCHER_VERSION=2.10.0
-RANCHER_IMAGE_TAG=v2.10.0
-CHART_PATH=rancher-latest/rancher
-
 RANCHER_VERSION=2.10.0-alpha2
 RANCHER_IMAGE_TAG=v2.10.0-alpha2
 CHART_PATH=rancher-alpha/rancher
+
+RANCHER_VERSION=2.10.0
+RANCHER_IMAGE_TAG=v2.10.0
+CHART_PATH=rancher-latest/rancher
 
 helm upgrade --install rancher "${CHART_PATH}" \
   --namespace cattle-system \

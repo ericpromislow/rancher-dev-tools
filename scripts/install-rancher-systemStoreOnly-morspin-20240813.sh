@@ -53,9 +53,11 @@ RANCHER_VERSION=2.10.0
 RANCHER_IMAGE_TAG=v2.10.0-dev.21
 CHART_PATH=rancher-latest/rancher
 
+#TODO: Get rid of the double-dash
+
 RANCHER_VERSION=2.10.0-alpha2
 # RANCHER_IMAGE_TAG=v2.10.0-alpha2
-RANCHER_IMAGE_TAG=v2.10.0-dev-arm64.23
+RANCHER_IMAGE_TAG=v2.10.0-dev-arm64.32
 CHART_PATH=rancher-alpha/rancher
 
 #REPO=rancher
