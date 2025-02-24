@@ -53,12 +53,13 @@ RANCHER_VERSION=2.10.0
 RANCHER_IMAGE_TAG=v2.10.0-dev.21
 CHART_PATH=rancher-latest/rancher
 
-#TODO: Get rid of the double-dash
 
 RANCHER_VERSION=2.10.0-alpha2
-# RANCHER_IMAGE_TAG=v2.10.0-alpha2
-RANCHER_IMAGE_TAG=v2.10.0-dev-arm64.32
+RANCHER_IMAGE_TAG=v2.10.0-dev-arm64.38
 CHART_PATH=rancher-alpha/rancher
+
+REPLICA_COUNT=3
+REPLICA_COUNT=1
 
 #REPO=rancher
 #RANCHER_IMAGE_TAG=v2.9.1-rc2
@@ -72,6 +73,7 @@ helm upgrade --install rancher "${CHART_PATH}" \
   --set CATTLE_LOGLEVEL=debug \
   --version "${RANCHER_VERSION}" \
   --set tls=external \
+  --set replicas=$REPLICA_COUNT \
   --set hostname="$NGROK1"
 
 #  --set webhook=morspin/webhook:v01 \

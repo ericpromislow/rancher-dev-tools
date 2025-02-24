@@ -68,6 +68,9 @@ RANCHER_VERSION=2.10.0
 RANCHER_IMAGE_TAG=v2.10.0
 CHART_PATH=rancher-latest/rancher
 
+REPLICA_COUNT=3
+REPLICA_COUNT=1
+
 helm upgrade --install rancher "${CHART_PATH}" \
   --namespace cattle-system \
   --create-namespace \
@@ -76,6 +79,7 @@ helm upgrade --install rancher "${CHART_PATH}" \
   --set agentTLSMode=system-store \
   --version "${RANCHER_VERSION}" \
   --set tls=external \
+  --set replicas=$REPLICA_COUNT \
   --set hostname="$NGROK1"
 
 #  --set webhook=morspin/webhook:v01 \
