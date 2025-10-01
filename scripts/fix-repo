@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -exu
+
+repo=$1
+
+git remote rename origin upstream
+git remote add origin git@github.com:ericpromislow/$repo.git
+git remote set-url --push upstream https://github.com/rancher/$repo.git
+
+git remote -v

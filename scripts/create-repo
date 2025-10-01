@@ -1,0 +1,38 @@
+#!/bin/sh
+
+cd ~/workspace/rancher
+echo mkdir -p ~/workspace/rancher
+echo cd ~/workspace/rancher
+for x in * ; do
+  if [ -e "$x/.git" ] ; then
+    cd "$x"
+    X="$(git remote -v | grep -e origin  -e fetch)"
+    if [[ "$X" =~ rancher ]] ; then
+      repo=$(echo $x | sed s@/@@)
+      echo "git clone git@github.com:rancher$repo.git"
+      echo "cd $repo"
+      echo "git pull"
+      echo "cd .."
+    fi
+    cd ..
+  fi
+done
+
+cd ~/git/ericpromislow/rancher
+for x in * ; do
+  if [ -e "$x/.git" ] ; then
+    cd "$x"
+    X="$(git remote -v | grep -e origin  -e fetch)"
+    if [[ "$X" =~ rancher ]] ; then
+      repo=$(echo $x | sed s@/@@)
+      echo "git clone git@github.com:rancher$repo.git"
+      echo "cd $repo"
+      echo "git pull"
+      echo "fix-repo $repo"
+      echo sync-from-upstream
+      echo "cd .."
+      echo ""
+    fi
+    cd ..
+  fi
+done

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -ex
+
+BR=$(git branch --show-current)
+
+git fetch upstream
+git co $BR
+git reset --hard upstream/$BR
