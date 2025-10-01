@@ -1,5 +1,9 @@
-mkdir -p /Users/ericp/workspace/rancher
-cd /Users/ericp/workspace/rancher
+#!/bin/sh
+
+set -e
+
+mkdir -p ~/workspace/rancher
+cd ~/workspace/rancher
 git clone git@github.com:rancher/aks-operator.git
 cd aks-operator
 git pull
@@ -245,6 +249,8 @@ cd wrangler
 git pull
 cd ..
 
+mkdir -p ~/workspace/rancher
+cd ~/workspace/rancher
 git clone git@github.com:rancher/apiserver.git
 cd apiserver
 git pull
