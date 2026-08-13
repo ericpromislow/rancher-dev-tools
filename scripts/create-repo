@@ -12,7 +12,7 @@ for x in * ; do
   if [ -e "$x/.git" ] ; then
     cd "$x"
     X="$(git remote -v | grep -e origin  -e fetch)"
-    if [[ "$X" =~ rancher ]] ; then
+    if [[ "$X" =~ github.com:rancher/ ]] ; then
       repo=$(echo $x | sed s@/@@)
       echo "git clone git@github.com:rancher/$repo.git"
       echo "cd $repo"
@@ -25,8 +25,8 @@ for x in * ; do
 done
 
 cd ~/git/ericpromislow/rancher
-echo mkdir -p '~/workspace/rancher'
-echo cd '~/workspace/rancher'
+echo mkdir -p '~/git/ericpromislow/rancher'
+echo cd '~/git/ericpromislow/rancher'
 for x in * ; do
   if [ -e "$x/.git" ] ; then
     cd "$x"
@@ -45,6 +45,14 @@ for x in * ; do
   fi
 done
 
+echo 'go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest'
+
 echo '# get these progs:'
 echo '# git'
 echo '# vim'
+echo '# ruby'
+echo '# apt-get install build-essential curl'
+echo '... homebrew get URL'
+echo '# brew install golang'
+echo '# brew install gh'
+echo '# gh auth login'

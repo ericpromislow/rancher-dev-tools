@@ -12,16 +12,23 @@ flip() {
 
 set -exu
 
-case "${1:-localhost}" in
-localhost) ;;
-*) pgrep -f 'ngrok http --inspect=false https://localhost:443' || flip 'ngrok not running' ;;
-esac
+NGROK2=eric.rancher.tomlebreux.com
 
-NGROK=$1
-case $NGROK in
+if [[ -z "${NGROK2:-}" ]] ; then
+  case "${1:-localhost}" in
+    localhost) ;;
+    *) pgrep -f 'ngrok http --inspect=false https://localhost:7?443' || flip 'ngrok not running' ;;
+  esac
+
+  NGROK=$1
+  case $NGROK in
     localhost) NGROK1=localhost ;;
     *) NGROK1="${NGROK}".ngrok.app ;;
-esac
+  esac
+  NGROK=$NGROK1
+else
+  NGROK=$NGROK2
+fi
 
 helm repo list | grep -q cert-manager || helm repo add cert-manager https://charts.jetstack.io
 helm repo list | grep -q rancher-alpha || helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
@@ -30,7 +37,7 @@ helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetst
 
 # Update your local Helm chart repository cache
 helm repo update
-
+ 
 # Install the cert-manager Helm chart
 helm upgrade --install cert-manager cert-manager/cert-manager \
   --namespace cert-manager \
@@ -38,6 +45,8 @@ helm upgrade --install cert-manager cert-manager/cert-manager \
   --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --wait --timeout=10m
 
 kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
+
+REPO=rancher
 
 # 2.9.2-alpha2 digital ocean creds fail, so go back to 2.9.1z
 
@@ -64,23 +73,56 @@ RANCHER_VERSION=2.10.0-alpha2
 RANCHER_IMAGE_TAG=v2.10.0-alpha2
 CHART_PATH=rancher-alpha/rancher
 
-RANCHER_VERSION=2.10.0
-RANCHER_IMAGE_TAG=v2.10.0
+RANCHER_VERSION=2.11.0-alpha8
+RANCHER_IMAGE_TAG=v2.12.0-dev-vai-arm64.25
+CHART_PATH=rancher-alpha/rancher
+
+RANCHER_VERSION=2.10.3
+RANCHER_IMAGE_TAG=v2.10.3
+CHART_PATH=rancher-latest/rancher
+
+RANCHER_VERSION=2.11.3
+RANCHER_IMAGE_TAG=v2.11.3
+CHART_PATH=rancher-latest/rancher
+
+RANCHER_VERSION=2.12.1
+RANCHER_IMAGE_TAG=v2.12.1
+CHART_PATH=rancher-latest/rancher
+
+RANCHER_VERSION=2.13.0
+RANCHER_IMAGE_TAG=v2.13.0
+CHART_PATH=rancher-latest/rancher
+
+RANCHER_VERSION=2.13.1
+RANCHER_IMAGE_TAG=v2.13.1
+CHART_PATH=rancher-latest/rancher
+
+RANCHER_VERSION=2.13.2-alpha3
+RANCHER_IMAGE_TAG=v2.13.2-alpha3
+CHART_PATH=rancher-alpha/rancher
+
+RANCHER_VERSION=2.13.1
+RANCHER_IMAGE_TAG=v2.13.1
 CHART_PATH=rancher-latest/rancher
 
 REPLICA_COUNT=3
 REPLICA_COUNT=1
 
+RANCHER_VERSION=2.14.2
+RANCHER_IMAGE_TAG=v2.14.2
+CHART_PATH=rancher-latest/rancher
+
 helm upgrade --install rancher "${CHART_PATH}" \
   --namespace cattle-system \
   --create-namespace \
-  --set rancherImage=rancher/rancher \
+  --set rancherImage=$REPO/rancher \
   --set rancherImageTag="${RANCHER_IMAGE_TAG}" \
   --set agentTLSMode=system-store \
   --version "${RANCHER_VERSION}" \
   --set tls=external \
   --set replicas=$REPLICA_COUNT \
-  --set hostname="$NGROK1"
+  --set CATTLE_FEATURES=ui-sql-cache=true \
+  --set hostname="$NGROK"
 
 #  --set webhook=morspin/webhook:v01 \
 

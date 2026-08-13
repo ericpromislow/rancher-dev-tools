@@ -12,20 +12,16 @@ flip() {
 
 set -exu
 
-case "${1:-localhost}" in
-localhost) ;;
-*) pgrep -f 'ngrok http --inspect=false https://localhost:443' || flip 'ngrok not running' ;;
-esac
-
-NGROK=$1
-case $NGROK in
-    localhost) NGROK1=localhost ;;
-    *) NGROK1="${NGROK}".ngrok.app ;;
-esac
+NGROK2=eric.rancher.tomlebreux.com
+NGROK1=$NGROK2
+NGROK=$NGROK2
 
 helm repo list | grep -q cert-manager || helm repo add cert-manager https://charts.jetstack.io
+helm repo list | grep -q rancher-alpha || helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
 helm repo list | grep -q rancher-latest || helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetstack.io
+
+# helm repo list | grep -q rancher-head-2.14 || helm repo add rancher-head-2.14 https://charts.optimus.rancher.io/server-charts/release-2.14
 
 # Update your local Helm chart repository cache
 helm repo update
@@ -40,29 +36,38 @@ kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
 
 REPO=morspin
 
-RANCHER_VERSION=2.9.2
-RANCHER_IMAGE_TAG=v2.9.2
+Y=159
+
+RANCHER_VERSION=2.15.0
+RANCHER_IMAGE_TAG="v2.15.0-dev-arm64.$Y"
 CHART_PATH=rancher-latest/rancher
 
-RANCHER_VERSION=2.10.0-alpha2
-# RANCHER_IMAGE_TAG=v2.10.0-alpha2
-RANCHER_IMAGE_TAG=v2.10.0-dev.20
-CHART_PATH=rancher-alpha/rancher
+# REPO="${REPO:-rancher}"
+REPO=rancher
+REPO=morspin
 
-RANCHER_VERSION=2.10.0
-RANCHER_IMAGE_TAG=v2.10.0-dev.21
-CHART_PATH=rancher-latest/rancher
+# Remote dialer doesn't start up with this docker-built thing.  Try the linux builds...
 
+# curl -sL https://releases.rancher.com/server-charts/alpha/index.yaml | yq '.entries.rancher[].version' | sort 
+# curl -sL https://releases.rancher.com/server-charts/latest/index.yaml | yq '.entries.rancher[].version' | grep -v -e -rc -e -hotfix | sort
 
-RANCHER_VERSION=2.10.0-alpha2
-RANCHER_IMAGE_TAG=v2.10.0-dev-arm64.38
-CHART_PATH=rancher-alpha/rancher
+# Build notes:
+# ARCH=arm64 REPO=morspin make quick
 
 REPLICA_COUNT=3
 REPLICA_COUNT=1
 
-#REPO=rancher
-#RANCHER_IMAGE_TAG=v2.9.1-rc2
+CATTLE_AGENT_IMAGE="$(echo $RANCHER_IMAGE_TAG | sed s/arm64/amd64/g)"
+
+REPLICA_COUNT=3
+REPLICA_COUNT=1
+
+RANCHER_VERSION=2.14.2
+RANCHER_IMAGE_TAG=v2.14.2
+CHART_PATH=rancher-latest/rancher
+
+Y=154
+RANCHER_IMAGE_TAG=v2.14.2-dev-vai-arm64.${Y}
 
 helm upgrade --install rancher "${CHART_PATH}" \
   --namespace cattle-system \
@@ -71,6 +76,7 @@ helm upgrade --install rancher "${CHART_PATH}" \
   --set rancherImageTag="${RANCHER_IMAGE_TAG}" \
   --set agentTLSMode=system-store \
   --set CATTLE_LOGLEVEL=debug \
+  --set CATTLE_AGENT_IMAGE="$CATTLE_AGENT_IMAGE" \
   --version "${RANCHER_VERSION}" \
   --set tls=external \
   --set replicas=$REPLICA_COUNT \

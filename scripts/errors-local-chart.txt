@@ -1,0 +1,12 @@
+July 7/25
+
+Failed to process image event: failed to import
+/var/lib/rancher/rke2/agent/images/kube-apiserver-image.txt:
+failed to pull images from
+/var/lib/rancher/rke2/agent/images/kube-apiserver-image.txt:
+image "index.docker.io/rancher/hardened-kubernetes:v1.31.10-rke2r1-build20250618": not found
+
+ image \"i
+ndex.docker.io/rancher/rke2-cloud-provider:v1.31.9-rc1.0.20250516171836-812206503b28-build20250612\":
+not found
+

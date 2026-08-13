@@ -19,11 +19,6 @@ cd backup-restore-operator
 git pull
 cd ..
 
-git clone git@github.com:rancher/build-it-charts-build-scripts.git
-cd build-it-charts-build-scripts
-git pull
-cd ..
-
 git clone git@github.com:rancher/charts.git
 cd charts
 git pull
