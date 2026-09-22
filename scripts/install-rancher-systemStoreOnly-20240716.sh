@@ -12,23 +12,12 @@ flip() {
 
 set -exu
 
-NGROK2=eric.rancher.tomlebreux.com
-
-if [[ -z "${NGROK2:-}" ]] ; then
-  case "${1:-localhost}" in
-    localhost) ;;
-    *) pgrep -f 'ngrok http --inspect=false https://localhost:7?443' || flip 'ngrok not running' ;;
-  esac
-
-  NGROK=$1
-  case $NGROK in
-    localhost) NGROK1=localhost ;;
-    *) NGROK1="${NGROK}".ngrok.app ;;
-  esac
-  NGROK=$NGROK1
-else
-  NGROK=$NGROK2
-fi
+case "${1:-}" in
+    *.ngrok.app) pgrep -f 'ngrok http --inspect=false https://localhost:443' || flip 'ngrok not running'
+                 NGROK1="$1" ;;
+    "") flip "No domain provided" ;;
+    *) NGROK1="$1" ;;
+esac
 
 helm repo list | grep -q cert-manager || helm repo add cert-manager https://charts.jetstack.io
 helm repo list | grep -q rancher-alpha || helm repo add rancher-alpha https://releases.rancher.com/server-charts/alpha
@@ -37,14 +26,14 @@ helm repo list | grep -q jetstack || helm repo add jetstack https://charts.jetst
 
 # Update your local Helm chart repository cache
 helm repo update
- 
+
 # Install the cert-manager Helm chart
 helm upgrade --install cert-manager cert-manager/cert-manager \
   --namespace cert-manager \
   --create-namespace \
-  --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --wait --timeout=10m
+  --set crds.enabled=true --set "extraArgs[0]=--enable-certificate-owner-ref=true" --wait --timeout=1s || true
 
-kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 1m
+kubectl rollout status --namespace cert-manager deploy/cert-manager --timeout 3m
 
 REPO=rancher
 
@@ -112,19 +101,35 @@ RANCHER_VERSION=2.14.2
 RANCHER_IMAGE_TAG=v2.14.2
 CHART_PATH=rancher-latest/rancher
 
+RANCHER_VERSION=2.15.0
+RANCHER_IMAGE_TAG=v2.15.0
+CHART_PATH=rancher-latest/rancher
+
 helm upgrade --install rancher "${CHART_PATH}" \
   --namespace cattle-system \
   --create-namespace \
   --set rancherImage=$REPO/rancher \
   --set rancherImageTag="${RANCHER_IMAGE_TAG}" \
   --set agentTLSMode=system-store \
+  --set bootstrapPassword='0319542687NARIVHLZCMUBdmxtuwizrvlj' \
   --version "${RANCHER_VERSION}" \
   --set tls=external \
   --set replicas=$REPLICA_COUNT \
   --set CATTLE_FEATURES=ui-sql-cache=true \
-  --set hostname="$NGROK"
+  --set hostname="$NGROK1"
 
-#  --set webhook=morspin/webhook:v01 \
+kubectl rollout status --namespace cattle-system deploy/rancher
 
-#  --set rancherImageTag=v2.9-3c4ccdc5bc9fde3510089153b5ad58fdbe604880-head \
-#@  --version 2.9.0-alpha7 \
+set +x
+
+i=0
+while : true ; do
+  if kubectl get deploy -n cattle-system | grep rancher-webhook ; then
+    break
+  fi
+  i=$((i+1))
+  sleep 1
+done
+echo "Needed $i seconds to get rancher-webhook deployed."
+set -e
+kubectl rollout status --namespace cattle-system deploy/rancher-webhook
